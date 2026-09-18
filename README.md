@@ -1,5 +1,24 @@
 # Orchestration API
 
+This repository contains a Fastify/TypeScript orchestration API for creating a
+transaction and its linked merchant receivable. IDs are reserved atomically
+from the provided Numerator service using compare-and-set; resources are stored
+in the provided json-server.
+
+Run the supplied services with `docker compose up`, then install and verify
+the API from `orchestration-api/` with `npm install` and `npm run verify`.
+The API listens on port 3001 in Docker. `POST /transactions` accepts the
+challenge card payload and returns a 201 response containing only the masked
+card number; CVV is used only for the downstream persistence shape and is never
+returned or logged. Debit receivables are paid at D+0 with a 2% fee; credit
+receivables wait for funds at D+30 with a 4% fee. Money is calculated with
+integer cents and serialized canonically.
+
+The implementation deliberately does not claim a cross-service transaction.
+Numerator conflicts retry within a bounded cap, while persistence failures use
+best-effort transaction compensation. Lost write outcomes require verification
+and may remain uncertain; production evolution would add durable reconciliation.
+
 ## Language Options
 
 This document is also available in:
