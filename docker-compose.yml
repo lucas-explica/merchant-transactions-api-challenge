@@ -26,6 +26,8 @@ services:
     environment:
       PORT: 3001
       HOST: 0.0.0.0
+      NUMERATOR_URL: http://numerator-api:3000
+      JSON_SERVER_URL: http://json-server:8080
 
   tcpdump:
     image: alpine
