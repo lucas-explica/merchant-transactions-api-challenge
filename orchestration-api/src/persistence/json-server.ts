@@ -6,6 +6,7 @@ export class PersistenceError extends Error {
     super(message);
   }
 }
+export class ConsistencyError extends Error {}
 export type Resource = Record<string, unknown>;
 export function jsonServer(baseUrl: string) {
   async function request(path: string, init: RequestInit) {
@@ -26,8 +27,20 @@ export function jsonServer(baseUrl: string) {
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify(resource),
       }),
-    get: (collection: string, id: string) =>
-      request(`${collection}/${encodeURIComponent(id)}`, { method: 'GET' }),
+    async get(collection: string, id: string) {
+      try {
+        const response = await request(
+          `${collection}/${encodeURIComponent(id)}`,
+          {
+            method: 'GET',
+          },
+        );
+        return (await response.json()) as Resource;
+      } catch (error) {
+        if (error instanceof PersistenceError && !error.ambiguous) return null;
+        throw error;
+      }
+    },
     remove: (collection: string, id: string) =>
       request(`${collection}/${encodeURIComponent(id)}`, { method: 'DELETE' }),
   };

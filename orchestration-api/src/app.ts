@@ -13,7 +13,11 @@ import { maskCardNumber } from './domain/card.js';
 import { parseMoney, serializeMoney } from './domain/money.js';
 import { buildReceivable } from './domain/receivable.js';
 import { httpNumerator, reservePair } from './numerator/allocator.js';
-import { jsonServer } from './persistence/json-server.js';
+import {
+  ConsistencyError,
+  jsonServer,
+  PersistenceError,
+} from './persistence/json-server.js';
 
 export const HealthResponse = Type.Object({
   status: Type.Literal('ok'),
@@ -67,14 +71,39 @@ export function buildApp(): FastifyInstance {
         const db = jsonServer(
           process.env.JSON_SERVER_URL ?? 'http://localhost:8080',
         );
-        await db.create('transactions', transaction);
+        try {
+          await db.create('transactions', transaction);
+        } catch (error) {
+          if (error instanceof PersistenceError && error.ambiguous) {
+            const found = await db.get('transactions', pair.transactionId);
+            if (!found || !matches(found, transaction))
+              throw new ConsistencyError(
+                'Transaction persistence outcome is uncertain',
+              );
+          } else throw error;
+        }
         try {
           await db.create('receivables', receivable);
         } catch (error) {
+          if (error instanceof PersistenceError && error.ambiguous) {
+            const found = await db.get('receivables', pair.receivableId);
+            if (found && matches(found, receivable))
+              return reply.status(201).send({ transaction, receivable });
+            if (!found) {
+              try {
+                await db.remove('transactions', pair.transactionId);
+              } catch {
+                throw new ConsistencyError('Compensation outcome is uncertain');
+              }
+            }
+            throw new ConsistencyError(
+              'Receivable persistence outcome is uncertain',
+            );
+          }
           try {
             await db.remove('transactions', pair.transactionId);
           } catch {
-            /* compensation is best effort */
+            throw new ConsistencyError('Compensation outcome is uncertain');
           }
           throw error;
         }
@@ -111,4 +140,13 @@ export function buildApp(): FastifyInstance {
   });
 
   return app;
+}
+
+function matches(
+  actual: Record<string, unknown>,
+  expected: Record<string, unknown>,
+) {
+  return Object.entries(expected).every(
+    ([key, value]) => actual[key] === value,
+  );
 }
