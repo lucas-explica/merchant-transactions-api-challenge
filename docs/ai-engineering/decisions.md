@@ -20,6 +20,14 @@ AI architecture initially proposed assigning N and N+1 after CAS N→N+2.
 Independent review compared that decision with the supplied Numerator initial state and fixture and found that N is already allocated.
 Decision corrected to N+1 and N+2 before implementation.
 
+## Slice 1B creation semantics corrected by independent review
+
+- AI implementation exposed the final POST endpoint during Slice 1B.
+- It returned 201 before Numerator/persistence guarantees existed.
+- Independent Test Engineer review detected the semantic mismatch before commit.
+- Architecture ownership was restored before remediation: Slice 1B now owns schemas and deterministic domain behavior only; the complete public POST endpoint belongs to the persistence/orchestration slice.
+- Logging had also been disabled to avoid sensitive-data exposure, revealing the need to distinguish security from observability; structured logging remains enabled with payment data excluded.
+
 ## First implementation slice scope corrected by independent review
 
 Implementation instructions decomposed the first planned slice more narrowly than the approved plan described.
@@ -32,3 +40,23 @@ The Architect approved a smaller sequential decomposition: Slice 1A for applicat
 - Independent Test Engineer review noticed that build output could remain visible as untracked content and be accidentally committed.
 - Decision: ignore the project-specific build output in the repository and add a concise generated-artifact policy requiring systematic checks in future slices.
 - Verification: build output is ignored by Git, and verification is run before and after a build.
+
+## Slice 1B monetary and card-data contract corrected before remediation
+
+- AI implementation instructions required zero monetary values to be rejected.
+- Independent Test Engineer review compared that behavior with the approved
+  contract and detected the mismatch before the Slice 1B commit.
+- Architecture re-established the authoritative requirement: monetary input is
+  non-negative (`value >= 0`), not positive (`value > 0`). Code remediation is
+  owned by the Implementer.
+- Slice 1B also explicitly owns deterministic card transformation: full PAN is
+  reduced to its last four digits, and CVV is excluded from response and logs.
+
+## Harness file ownership correction
+
+- An untracked `.agents/rules/ponytail.md` introduced overlapping YAGNI and
+  simplicity guidance without a canonical workflow reference.
+- Architecture removed the standalone file to preserve a single source of
+  truth. New harness guidance must be placed in an existing canonical artifact
+  with explicit ownership/reference, rather than added as an incidental rules
+  file.

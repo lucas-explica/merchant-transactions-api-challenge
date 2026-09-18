@@ -7,10 +7,10 @@ Goal: TypeScript/Fastify app foundation, strict TypeScript, schema/OpenAPI found
 Acceptance: application boots and health/OpenAPI are available without external services.
 Tests/gate: typecheck, health/schema tests, OpenAPI check, and deterministic verification. Exclude POST /transactions, persistence, and business behavior.
 
-## Slice 1B — public transaction contract and deterministic domain behavior
-Goal: define POST /transactions request and 201 response contracts; implement boundary validation, card masking, exact money representation, debit/credit financial rules, and settlement-date calculation.
-Acceptance: valid debit and credit requests produce the documented deterministic contract; invalid input maps to stable 4xx; no external ID or persistence dependency is used yet.
-Tests/gate: route/schema and deterministic unit tests for validation, masking, fees, totals, rounding, status, and settlement date. Exclude Numerator, persistence, and orchestration compensation.
+## Slice 1B — transaction contract schemas and deterministic domain behavior
+Goal: define and test the POST /transactions request/response schemas plus boundary validation, card masking, exact money representation, debit/credit financial rules, and settlement-date calculation.
+Acceptance: schemas and pure domain behavior are reviewable and deterministic; no public successful POST endpoint is exposed until IDs and resources can actually be created.
+Tests/gate: schema/OpenAPI and deterministic unit tests for validation, masking, fees, totals, rounding, status, and settlement date. Exclude public POST activation, Numerator, persistence, and orchestration compensation.
 
 ## Slice 2 — Numerator pair allocator
 Goal: CAS N to N+2, assign transaction N+1 and receivable N+2, with bounded conflict retry.
@@ -18,7 +18,7 @@ Acceptance: no GET/PUT allocation path, no UUIDs, each successful reservation ex
 Tests/gate: conflict/exhaustion tests, including validation of the tunable retry default against real-service contention. Separate CAS conflicts from network/dependency failures; use currentNumerator from a 400 conflict when available. Exclude generic retry libraries and resource writes.
 
 ## Slice 3 — persistence and orchestration
-Goal: use supplied json-server to persist transaction then linked receivable.
+Goal: activate POST /transactions using Numerator-allocated IDs and supplied json-server to persist transaction then linked receivable.
 Acceptance: successful request returns both resources and preserves invariants.
 Tests/gate: controlled persistence-failure tests. Exclude durable reconciliation.
 

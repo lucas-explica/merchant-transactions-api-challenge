@@ -29,9 +29,22 @@ Reserve pair -> POST transaction -> POST receivable -> return. A definite transa
 
 Guarantee: every 201 response represents one linked pair, and definite receivable failure is not knowingly left orphaned. Non-guarantee: lost responses after writes can leave an orphan.
 
+HTTP 201 is reserved for a transaction and receivable that have both been
+persisted, linked, and represented by Numerator-originated IDs. Slice 1B
+therefore exposes schemas and domain functions only; the public POST route is
+activated as a complete endpoint in Slice 3 after allocation and persistence.
+
+The HTTP composition boundary receives a minimal injected `now(): Date`
+function (or equivalent single seam), not a general clock framework.
+
 ## Security, observability, and exclusions
 
-Logs contain correlation ID, IDs, method, CAS outcome, and compensation outcome. They never contain PAN, CVV, or the complete request body. No Kafka, RabbitMQ, Redis, custom database, saga engine, event sourcing, CQRS, generic repositories, custom DI, circuit breaker, metrics, or tracing stack.
+Keep Fastify structured request logging enabled. Logs contain safe request
+metadata and later IDs, method, CAS outcome, and compensation outcome. They
+never contain PAN, CVV, or complete request bodies. `logger:false` is not a
+security substitute; no large redaction framework is needed. No Kafka,
+RabbitMQ, Redis, custom database, saga engine, event sourcing, CQRS, generic
+repositories, custom DI, circuit breaker, metrics, or tracing stack.
 
 ## Invariants
 

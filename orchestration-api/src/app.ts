@@ -34,7 +34,9 @@ export function buildApp(): FastifyInstance {
   });
 
   app.setErrorHandler((error, _request, reply) => {
-    app.log.error(error);
+    if (typeof error === 'object' && error !== null && 'validation' in error) {
+      return void reply.status(400).send({ error: 'Invalid request' });
+    }
     const statusCode =
       error instanceof Error &&
       'statusCode' in error &&

@@ -49,4 +49,14 @@ describe('application foundation', () => {
       200,
     );
   });
+
+  it('does not expose the transaction endpoint before orchestration exists', async () => {
+    const app = buildApp();
+    apps.push(app);
+    await app.ready();
+    expect(app.swagger().paths?.['/transactions']).toBeUndefined();
+    expect(
+      (await app.inject({ method: 'POST', url: '/transactions' })).statusCode,
+    ).toBe(404);
+  });
 });
