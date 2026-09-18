@@ -1,6 +1,6 @@
 # Merchant Transactions API implementation plan
 
-Status: SLICE_1A_IMPLEMENTED_PENDING_REVIEW.
+Status: COMPLETE — READY_FOR_DELIVERY.
 
 ## Slice 1A — application and verification foundation
 Goal: TypeScript/Fastify app foundation, strict TypeScript, schema/OpenAPI foundation, health route, deterministic verification tooling, and Docker foundation.

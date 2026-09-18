@@ -10,6 +10,7 @@ vi.mock('../src/persistence/json-server.js', () => {
     constructor(
       message: string,
       public ambiguous = false,
+      public statusCode?: number,
     ) {
       super(message);
     }
@@ -122,6 +123,20 @@ describe('Slice 4 recovery semantics', () => {
     });
     const response = await post();
     expect(response.statusCode).toBe(201);
+    const body = response.json();
+    expect(body.transaction).not.toHaveProperty('cardCvv');
+    expect(JSON.stringify(body)).not.toContain('4111111111111111');
+    expect(state.remove).not.toHaveBeenCalled();
+  });
+  it('does not compensate when verification reports a server failure', async () => {
+    state.create
+      .mockResolvedValueOnce({})
+      .mockRejectedValueOnce(new PersistenceError('unknown', true));
+    state.get.mockRejectedValueOnce(
+      new PersistenceError('server failure', false, 500),
+    );
+    const response = await post();
+    expect(response.statusCode).toBe(500);
     expect(state.remove).not.toHaveBeenCalled();
   });
   it('H/L: ambiguous receivable mismatch or unavailable never deletes transaction', async () => {

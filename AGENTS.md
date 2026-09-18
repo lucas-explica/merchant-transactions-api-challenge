@@ -31,7 +31,7 @@ Repository-level guidance for the AI engineering harness.
 
 Architect → Architecture Decision Gate when needed → Implementer → deterministic verification → Test Engineer → Reviewer → remediation and fresh review → Delivery Auditor.
 
-Detailed role, skill, plan, workflow, and AI-journey guidance lives under `.agents/` and `ai-journey/`.
+Detailed role, skill, plan, workflow, and AI-journey guidance lives under `.agents/` and `docs/ai-engineering/`.
 
 ## Escalation
 

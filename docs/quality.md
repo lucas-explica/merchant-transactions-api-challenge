@@ -15,7 +15,7 @@
 
 ## Orchestration tests
 
-Cover definite transaction failure, receivable failure and DELETE compensation, ambiguous writes with read-after-write, and uncertain compensation. Assert no false success and correct error class.
+Cover definite transaction failure, receivable failure and DELETE compensation, ambiguous writes with read-after-write, and uncertain compensation. Assert no false success and correct error class. Resource absence requires explicit HTTP 404 evidence; dependency, authorization, timeout, and server failures must never be collapsed into not-found when absence drives destructive compensation. Ambiguous-outcome tests must exercise the real persistence adapter's HTTP error classification.
 
 ## Required real integration test
 

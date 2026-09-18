@@ -1,5 +1,12 @@
 # Engineering Decisions
 
+## Persistence failure classification corrected by external review
+
+- Observed failure: the persistence adapter treated every non-ambiguous GET HTTP error as resource absence, so HTTP 500 could trigger destructive compensation.
+- Promoted rule: resource absence requires explicit positive evidence such as HTTP 404; dependency failures, authorization failures, timeouts, and server errors must remain failures.
+- Responsible roles: Implementer preserves HTTP failure semantics; Test Engineer tests 404 separately from non-404 failures and asserts forbidden destructive side effects.
+- Verification: direct adapter tests and ambiguous receivable regression tests cover these cases.
+
 ## Governance context corrected before architecture approval
 
 - AI proposal: Begin architecture analysis immediately.

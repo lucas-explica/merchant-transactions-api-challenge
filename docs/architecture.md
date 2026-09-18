@@ -25,7 +25,7 @@ If the CAS response is lost, the outcome is unknown. Do not retry with or reuse 
 
 ## Consistency and failure model
 
-Reserve pair -> POST transaction -> POST receivable -> return. A definite transaction failure consumes IDs but creates no resource. A definite receivable failure triggers DELETE transaction. For ambiguous writes, GET by reserved ID first; if the receivable exists, treat the pair as committed but return an uncertainty error; if absent, compensate. Compensation failure or uncertainty is reported as reconciliation-required. No queue, outbox, saga engine, or distributed transaction is added.
+Reserve pair -> POST transaction -> POST receivable -> return. A definite transaction failure consumes IDs but creates no resource. For an ambiguous transaction POST, an exact GET match continues; confirmed 404 fails, unavailable verification or mismatch fails without false success. A definite receivable failure triggers DELETE transaction. For an ambiguous receivable POST, an exact GET match may return 201 without compensation; confirmed 404 compensates; unavailable verification or mismatch fails without blindly compensating. Compensation failure or uncertainty is reported as reconciliation-required. Absence requires positive evidence: only HTTP 404 confirms absence. No queue, outbox, saga engine, or distributed transaction is added.
 
 Guarantee: every 201 response represents one linked pair, and definite receivable failure is not knowingly left orphaned. Non-guarantee: lost responses after writes can leave an orphan.
 

@@ -69,6 +69,15 @@ export function buildApp(): FastifyInstance {
           cardExpirationDate: input.cardExpirationDate,
           cardCvv: input.cardCvv,
         };
+        const publicTransaction = {
+          id: transaction.id,
+          value: transaction.value,
+          description: transaction.description,
+          method: transaction.method,
+          cardNumber: transaction.cardNumber,
+          cardHolderName: transaction.cardHolderName,
+          cardExpirationDate: transaction.cardExpirationDate,
+        };
         const receivable = {
           id: pair.receivableId,
           transaction_id: pair.transactionId,
@@ -94,7 +103,9 @@ export function buildApp(): FastifyInstance {
           if (error instanceof PersistenceError && error.ambiguous) {
             const found = await db.get('receivables', pair.receivableId);
             if (found && matches(found, receivable))
-              return reply.status(201).send({ transaction, receivable });
+              return reply
+                .status(201)
+                .send({ transaction: publicTransaction, receivable });
             if (!found) {
               await compensate(db, pair.transactionId);
             }
@@ -106,7 +117,7 @@ export function buildApp(): FastifyInstance {
           throw error;
         }
         return reply.status(201).send({
-          transaction: { ...transaction, value: transaction.value },
+          transaction: publicTransaction,
           receivable,
         });
       },

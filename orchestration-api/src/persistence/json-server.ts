@@ -2,6 +2,7 @@ export class PersistenceError extends Error {
   constructor(
     message: string,
     public readonly ambiguous = false,
+    public readonly statusCode?: number,
   ) {
     super(message);
   }
@@ -13,7 +14,11 @@ export function jsonServer(baseUrl: string) {
     try {
       const response = await fetch(`${baseUrl}/${path}`, init);
       if (!response.ok)
-        throw new PersistenceError(`Persistence failed (${response.status})`);
+        throw new PersistenceError(
+          `Persistence failed (${response.status})`,
+          false,
+          response.status,
+        );
       return response;
     } catch (error) {
       if (error instanceof PersistenceError) throw error;
@@ -37,7 +42,8 @@ export function jsonServer(baseUrl: string) {
         );
         return (await response.json()) as Resource;
       } catch (error) {
-        if (error instanceof PersistenceError && !error.ambiguous) return null;
+        if (error instanceof PersistenceError && error.statusCode === 404)
+          return null;
         throw error;
       }
     },
