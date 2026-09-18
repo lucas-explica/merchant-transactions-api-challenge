@@ -18,3 +18,7 @@ Run the actual application against the provided Numerator and json-server. Launc
 ## Gates
 
 Each plan slice has a deterministic gate. Before delivery: typecheck, unit/orchestration tests, service-backed integration/concurrency test, fresh review, and delivery audit. Tests are evidence and do not override requirements.
+
+## Generated artifacts
+
+Generated build output must not be versioned unless intentionally required. Transient and generated artifacts must be explicitly ignored by Git, and source-quality tools must not accidentally treat them as source. Build and verification must not leave unexpected repository changes; completion evidence includes checking repository state after verification.
