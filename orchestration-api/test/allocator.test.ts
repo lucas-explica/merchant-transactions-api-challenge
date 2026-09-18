@@ -1,5 +1,8 @@
 import { describe, expect, it, vi } from 'vitest';
-import { reservePair } from '../src/numerator/allocator.js';
+import {
+  AllocationUncertainError,
+  reservePair,
+} from '../src/numerator/allocator.js';
 
 describe('numerator pair allocation', () => {
   it('assigns N+1 and N+2', async () => {
@@ -35,5 +38,18 @@ describe('numerator pair allocation', () => {
     };
     await expect(reservePair(client, 2)).rejects.toThrow('exhausted');
     expect(client.compareAndSet).toHaveBeenCalledTimes(2);
+  });
+
+  it('does not retry after an ambiguous CAS outcome', async () => {
+    const client = {
+      get: vi.fn().mockResolvedValue(3),
+      compareAndSet: vi
+        .fn()
+        .mockRejectedValue(new AllocationUncertainError('unknown')),
+    };
+    await expect(reservePair(client, 32)).rejects.toBeInstanceOf(
+      AllocationUncertainError,
+    );
+    expect(client.compareAndSet).toHaveBeenCalledTimes(1);
   });
 });

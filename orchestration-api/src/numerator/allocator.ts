@@ -9,7 +9,7 @@ export type NumeratorClient = {
 export class AllocationError extends Error {}
 export class AllocationUncertainError extends AllocationError {}
 
-export async function reservePair(client: NumeratorClient, maxAttempts = 8) {
+export async function reservePair(client: NumeratorClient, maxAttempts = 32) {
   let observed = await client.get();
   for (let attempt = 0; attempt < maxAttempts; attempt += 1) {
     const result = await client.compareAndSet(observed, observed + 2);
@@ -18,9 +18,11 @@ export async function reservePair(client: NumeratorClient, maxAttempts = 8) {
         transactionId: String(observed + 1),
         receivableId: String(observed + 2),
       };
-    if (typeof result.currentNumerator !== 'number')
-      observed = await client.get();
-    else observed = result.currentNumerator;
+    if (typeof result.currentNumerator === 'number')
+      observed = result.currentNumerator;
+    else observed = await client.get();
+    if (attempt + 1 < maxAttempts)
+      await new Promise((resolve) => setTimeout(resolve, 1 + (attempt % 3)));
   }
   throw new AllocationError('Numerator reservation retries exhausted');
 }
@@ -28,7 +30,12 @@ export async function reservePair(client: NumeratorClient, maxAttempts = 8) {
 export function httpNumerator(baseUrl: string): NumeratorClient {
   return {
     async get() {
-      const response = await fetch(`${baseUrl}/numerator`);
+      let response: Response;
+      try {
+        response = await fetch(`${baseUrl}/numerator`);
+      } catch {
+        throw new AllocationError('Numerator dependency failure');
+      }
       if (!response.ok)
         throw new AllocationError('Numerator dependency failure');
       const body = (await response.json()) as { numerator: number };
@@ -43,7 +50,9 @@ export function httpNumerator(baseUrl: string): NumeratorClient {
           body: JSON.stringify({ oldValue, newValue }),
         });
       } catch {
-        throw new AllocationError('Numerator dependency failure');
+        throw new AllocationUncertainError(
+          'Numerator reservation outcome is uncertain',
+        );
       }
       if (response.ok) return { ok: true };
       if (response.status === 400)

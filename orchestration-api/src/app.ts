@@ -50,8 +50,14 @@ export function buildApp(): FastifyInstance {
         const input = request.body;
         const value = parseMoney(input.value);
         const now = new Date();
+        const configuredAttempts = Number(process.env.NUMERATOR_MAX_ATTEMPTS);
+        const maxAttempts =
+          Number.isInteger(configuredAttempts) && configuredAttempts > 0
+            ? configuredAttempts
+            : 32;
         const pair = await reservePair(
           httpNumerator(process.env.NUMERATOR_URL ?? 'http://localhost:3000'),
+          maxAttempts,
         );
         const transaction = {
           id: pair.transactionId,
@@ -90,21 +96,13 @@ export function buildApp(): FastifyInstance {
             if (found && matches(found, receivable))
               return reply.status(201).send({ transaction, receivable });
             if (!found) {
-              try {
-                await db.remove('transactions', pair.transactionId);
-              } catch {
-                throw new ConsistencyError('Compensation outcome is uncertain');
-              }
+              await compensate(db, pair.transactionId);
             }
             throw new ConsistencyError(
               'Receivable persistence outcome is uncertain',
             );
           }
-          try {
-            await db.remove('transactions', pair.transactionId);
-          } catch {
-            throw new ConsistencyError('Compensation outcome is uncertain');
-          }
+          await compensate(db, pair.transactionId);
           throw error;
         }
         return reply.status(201).send({
@@ -140,6 +138,21 @@ export function buildApp(): FastifyInstance {
   });
 
   return app;
+}
+
+async function compensate(
+  db: ReturnType<typeof jsonServer>,
+  transactionId: string,
+) {
+  try {
+    await db.remove('transactions', transactionId);
+  } catch (error) {
+    if (!(error instanceof PersistenceError) || !error.ambiguous)
+      throw new ConsistencyError('Compensation failed');
+    const remaining = await db.get('transactions', transactionId);
+    if (remaining) throw new ConsistencyError('Compensation failed');
+    // A confirmed 404 after an ambiguous DELETE establishes compensation.
+  }
 }
 
 function matches(
