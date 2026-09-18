@@ -50,13 +50,13 @@ describe('application foundation', () => {
     );
   });
 
-  it('does not expose the transaction endpoint before orchestration exists', async () => {
+  it('exposes the transaction contract after orchestration is enabled', async () => {
     const app = buildApp();
     apps.push(app);
     await app.ready();
-    expect(app.swagger().paths?.['/transactions']).toBeUndefined();
+    expect(app.swagger().paths?.['/transactions']?.post).toBeDefined();
     expect(
       (await app.inject({ method: 'POST', url: '/transactions' })).statusCode,
-    ).toBe(404);
+    ).toBe(400);
   });
 });
