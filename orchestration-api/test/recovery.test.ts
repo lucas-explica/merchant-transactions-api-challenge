@@ -10,7 +10,7 @@ vi.mock('../src/persistence/json-server.js', () => {
     constructor(
       message: string,
       public ambiguous = false,
-      public statusCode?: number,
+      public downstreamStatusCode?: number,
     ) {
       super(message);
     }
@@ -138,6 +138,16 @@ describe('Slice 4 recovery semantics', () => {
     const response = await post();
     expect(response.statusCode).toBe(500);
     expect(state.remove).not.toHaveBeenCalled();
+  });
+  it('maps downstream 403 to public 500 while validation remains 400', async () => {
+    state.create.mockRejectedValueOnce(
+      new PersistenceError('forbidden by dependency', false, 403),
+    );
+    expect((await post()).statusCode).toBe(500);
+    const app = buildApp();
+    const response = await app.inject({ method: 'POST', url: '/transactions' });
+    await app.close();
+    expect(response.statusCode).toBe(400);
   });
   it('H/L: ambiguous receivable mismatch or unavailable never deletes transaction', async () => {
     for (const found of [{ id: '5', transaction_id: 'wrong' }, undefined]) {

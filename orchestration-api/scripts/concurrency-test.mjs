@@ -23,7 +23,7 @@ try {
   });
   const beforeTransactions = await request(`${jsonServerUrl}/transactions`);
   const beforeReceivables = await request(`${jsonServerUrl}/receivables`);
-  const responses = await Promise.all(
+  const settledResponses = await Promise.allSettled(
     Array.from({ length: 20 }, () =>
       fetch(`${orchestrationUrl}/transactions`, {
         method: 'POST',
@@ -40,6 +40,11 @@ try {
       }),
     ),
   );
+  const rejected = settledResponses.find(
+    (result) => result.status === 'rejected',
+  );
+  if (rejected) throw rejected.reason;
+  const responses = settledResponses.map((result) => result.value);
   if (responses.some((response) => response.status !== 201))
     throw new Error(
       `Expected 20 HTTP 201 responses, got ${responses.map((response) => response.status).join(',')}`,
@@ -95,6 +100,23 @@ try {
       body.receivable.total !== '240.00'
     )
       throw new Error('business assertion failed');
+  }
+  for (const transaction of newTransactions) {
+    if (
+      transaction.cardNumber !== '1111' ||
+      JSON.stringify(transaction).includes('4111111111111111')
+    )
+      throw new Error('persisted transaction card safety assertion failed');
+  }
+  for (const receivable of newReceivables) {
+    if (
+      receivable.status !== 'waiting_funds' ||
+      receivable.subtotal !== '250.00' ||
+      receivable.discount !== '10.00' ||
+      receivable.total !== '240.00' ||
+      !transactionIds.includes(receivable.transaction_id)
+    )
+      throw new Error('persisted receivable business assertion failed');
   }
   const numerator = await request(`${numeratorUrl}/numerator`);
   if (numerator.numerator !== 43)

@@ -32,7 +32,7 @@ describe('json-server persistence adapter', () => {
         jsonServer('http://db').get('transactions', '1'),
       ).rejects.toMatchObject({
         name: 'Error',
-        statusCode: status,
+        downstreamStatusCode: status,
       });
       vi.unstubAllGlobals();
     },

@@ -2,7 +2,7 @@ export class PersistenceError extends Error {
   constructor(
     message: string,
     public readonly ambiguous = false,
-    public readonly statusCode?: number,
+    public readonly downstreamStatusCode?: number,
   ) {
     super(message);
   }
@@ -42,7 +42,10 @@ export function jsonServer(baseUrl: string) {
         );
         return (await response.json()) as Resource;
       } catch (error) {
-        if (error instanceof PersistenceError && error.statusCode === 404)
+        if (
+          error instanceof PersistenceError &&
+          error.downstreamStatusCode === 404
+        )
           return null;
         throw error;
       }

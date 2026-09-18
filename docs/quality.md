@@ -41,7 +41,7 @@ Generated build output must not be versioned unless intentionally required. Tran
 
 ## Delivery evidence
 
-- Deterministic verification: `npm run verify` passed with 87 tests; `npm run build` passed.
+- Deterministic verification: `npm run verify` passed with 95 tests; `npm run build` passed.
 - Docker image build: verified with the repository Dockerfile. Docker Compose startup: verified for the exact published topology, including orchestration-api, Numerator, json-server, and tcpdump. Container networking: verified with orchestration-api configured to reach `numerator-api:3000` and `json-server:8080` through the Compose network. A real N=20 run through the containerized orchestration API produced 20 HTTP 201 responses, 20 newly persisted transactions, 20 newly persisted receivables, unique IDs, exact links, zero orphans, and final Numerator 43. The fixture was restored after the run and application logs contained no full PAN, CVV, or complete payment request body.
 - Three isolated N=20 runs each produced 20 HTTP 201 responses, 20 transactions, 20 receivables, 20 unique IDs in each collection, exact transaction links, zero created orphans, final Numerator 43, four-digit card data, credit status `waiting_funds`, discount `10.00`, total `240.00`, and no PAN/CVV in public responses.
 - The supplied Compose service declares `vimagick/json-server` without a tag. This is an infrastructure reproducibility limitation; compatible fallback evidence must not be presented as bit-for-bit verification of an unspecified latest image.
@@ -63,3 +63,5 @@ Money is accepted as a non-negative decimal string with at most two fractional d
 Numerator allocation uses CAS from N to N+2 and assigns transaction N+1 and receivable N+2. Conflicts retry with a bounded configurable limit (`NUMERATOR_MAX_ATTEMPTS`, default 32); an ambiguous CAS result is never retried or reused. Persistence is transaction first, receivable second, with read-after-write verification and safe compensation for definite receivable failure. Ambiguous or mismatching verification never returns false 201 and never performs destructive compensation without confirmation. The service provides consistency safeguards but does not claim ACID or durable reconciliation.
 
 Responses contain only the last four card digits and never CVV; logs and errors do not expose PAN, CVV, or request bodies.
+
+For reproducible integration verification, from the repository root run `docker compose up --build -d`, then from `orchestration-api/` run `npm run test:integration`, and finally from the repository root run `docker compose down`. The integration runner restores `config/db.json` after completion.
